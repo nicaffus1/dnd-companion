@@ -1,6 +1,8 @@
 # Changelog
+## 0.4.0
+Secure dice formulas, 3D tray, presets, history, copy results, schema 2 migration and eight new tests. CI/device verification pending.
 ## 0.3.0
-Pure core rules engine, separate edition strategies, temporary rules preview, twelve new tests. No database changes. CI/device verification pending.
+Pure core rules engine, separate edition strategies, temporary rules preview, twelve new tests. No database changes. CI and ten mobile checks passed.
 ## 0.2.0
 Campaign and character record management, local IndexedDB storage, revision-checked writes, validated backup/restore, data tests. Seven mobile checks and CI passed; manual restore pending.
 ## 0.1.0
