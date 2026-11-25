@@ -1,0 +1,3 @@
+import {readdir,readFile,writeFile} from 'node:fs/promises';import {createHash} from 'node:crypto';
+async function walk(dir){const entries=await readdir(dir,{withFileTypes:true});return (await Promise.all(entries.map(e=>e.isDirectory()?walk(dir+'/'+e.name):dir+'/'+e.name))).flat();}
+const files=(await walk('dist')).filter(p=>!p.endsWith('/sw.js')).sort();const hash=createHash('sha256');for(const f of files)hash.update(f).update(await readFile(f));const worker=await readFile('dist/sw.js','utf8');await writeFile('dist/sw.js',worker.replace('__BUILD_ID__',hash.digest('hex').slice(0,16)).replace('__PRECACHE_ASSETS__',JSON.stringify(files.map(f=>'./'+f.slice(5)))));

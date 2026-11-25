@@ -1,0 +1,1 @@
+export const tabs=[{id:'character',label:'Character'},{id:'inventory',label:'Inventory'},{id:'roll',label:'Roll'},{id:'journal',label:'Journal'},{id:'codex',label:'Codex'}];export function resolveTab(hash){const id=hash.replace(/^#\/?/,'');return tabs.some(t=>t.id===id)?id:'character';}

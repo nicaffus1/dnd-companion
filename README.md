@@ -1,2 +1,2 @@
-# dnd-companion
-D&amp;D companion app
+# D&D Companion
+Mobile-first personal D&D companion, version 0.1.0 foundation. Five tabs, forest green and gold, offline PWA shell. Gameplay modules are planned, not implemented. Run npm install, npm test, npm run dev. GitHub Pages workflow generates PNG icons from SVG, runs tests and builds. Set Settings > Pages > Source to GitHub Actions. On iPhone use Safari > Share > Add to Home Screen after successful deployment. No personal data is stored yet.
