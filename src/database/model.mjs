@@ -3,8 +3,9 @@ import {validResult,parseFormula,MODES} from '../features/dice/engine.mjs';
 import {validateCustom} from '../content/catalog.mjs';
 import {validateProfile} from '../content/profile.mjs';
 import {validateBuild,reviewBuild} from '../content/builder.mjs';
-export const SCHEMA_VERSION=4;
-export const emptyState=()=>({schemaVersion:4,builds:[],customContent:[],profiles:[],revision:0,campaigns:[],characters:[],activeCampaignId:null,activeCharacterId:null,rolls:[],presets:[]});
+import {validateSheet,sheetContext,normalizeSheet} from '../content/sheet.mjs';
+export const SCHEMA_VERSION=5;
+export const emptyState=()=>({schemaVersion:5,sheets:[],copyQueue:[],builds:[],customContent:[],profiles:[],revision:0,campaigns:[],characters:[],activeCampaignId:null,activeCharacterId:null,rolls:[],presets:[]});
 const fail=m=>{throw new Error(m)};
 const object=x=>x!==null&&typeof x==='object'&&!Array.isArray(x);
 const id=x=>typeof x==='string'&&/^[a-zA-Z0-9_-]{1,100}$/.test(x);
@@ -15,7 +16,8 @@ export function validateState(s){
  if(s?.schemaVersion===1&&fields(s,['schemaVersion','revision','campaigns','characters','activeCampaignId','activeCharacterId']))s={...s,schemaVersion:2,rolls:[],presets:[]};
  if(s?.schemaVersion===2&&fields(s,['schemaVersion','revision','campaigns','characters','activeCampaignId','activeCharacterId','rolls','presets']))s={...s,schemaVersion:3,customContent:[],profiles:[]};
  if(s?.schemaVersion===3&&fields(s,['schemaVersion','revision','campaigns','characters','activeCampaignId','activeCharacterId','rolls','presets','customContent','profiles']))s={...s,schemaVersion:4,builds:[]};
- if(!fields(s,['schemaVersion','revision','campaigns','characters','activeCampaignId','activeCharacterId','rolls','presets','customContent','profiles','builds'])||s.schemaVersion!==4||!Number.isSafeInteger(s.revision)||s.revision<0||s.revision>=Number.MAX_SAFE_INTEGER)fail('Unsupported or invalid data schema.');
+ if(s?.schemaVersion===4&&fields(s,['schemaVersion','revision','campaigns','characters','activeCampaignId','activeCharacterId','rolls','presets','customContent','profiles','builds']))s={...s,schemaVersion:5,sheets:[],copyQueue:[]};
+ if(!fields(s,['schemaVersion','revision','campaigns','characters','activeCampaignId','activeCharacterId','rolls','presets','customContent','profiles','builds','sheets','copyQueue'])||s.schemaVersion!==5||!Number.isSafeInteger(s.revision)||s.revision<0||s.revision>=Number.MAX_SAFE_INTEGER)fail('Unsupported or invalid data schema.');
  if(!Array.isArray(s.campaigns)||!Array.isArray(s.characters)||s.campaigns.length>10000||s.characters.length>10000)fail('Invalid record collections.');
  const campaignIds=new Set(),characterIds=new Set();
  for(const c of s.campaigns){if(!fields(c,['id','name','ruleset','createdAt'])||!id(c.id)||!name(c.name)||!rules(c.ruleset)||!Number.isSafeInteger(c.createdAt)||c.createdAt<0||campaignIds.has(c.id))fail('Invalid or duplicate campaign.');campaignIds.add(c.id);}
@@ -29,6 +31,7 @@ export function validateState(s){
  for(const p of s.presets){if(!fields(p,['id','campaignId','characterId','label','formula','mode'])||!id(p.id)||presetIds.has(p.id)||!scoped(p)||!name(p.label)||!MODES.includes(p.mode))fail('Invalid roll preset.');try{parseFormula(p.formula);}catch{fail('Invalid preset formula.');}presetIds.add(p.id);}
  if(!Array.isArray(s.customContent)||s.customContent.length>CUSTOM_ENTRIES||!Array.isArray(s.profiles)||s.profiles.length>s.characters.length)fail('Invalid content or profiles.');const contentIds=new Set(),profileIds=new Set();for(const c of s.customContent){validateCustom(c);if(contentIds.has(c.id))fail('Duplicate content ID.');contentIds.add(c.id);}for(const p of s.profiles){validateProfile(p);if(!characterIds.has(p.characterId)||profileIds.has(p.characterId))fail('Invalid profile reference.');profileIds.add(p.characterId);}
  if(!Array.isArray(s.builds)||s.builds.length>s.characters.length)fail('Invalid builds.');const buildIds=new Set();for(const b of s.builds){validateBuild(b);validateProfile(b.profile);if(!characterIds.has(b.characterId)||buildIds.has(b.characterId))fail('Invalid build reference.');buildIds.add(b.characterId);}
+ if(!Array.isArray(s.sheets)||s.sheets.length>s.characters.length||!Array.isArray(s.copyQueue)||new Set(s.copyQueue).size!==s.copyQueue.length||!s.copyQueue.every(i=>rollIds.has(i)))fail('Invalid sheet or copy queue.');const sheetIds=new Set();for(const sh of s.sheets){validateSheet(sh);if(!profileIds.has(sh.characterId)||sheetIds.has(sh.characterId))fail('Invalid sheet reference.');sheetIds.add(sh.characterId);}
  return s;
 }
 export function applyAction(s,a){
@@ -40,8 +43,10 @@ export function applyAction(s,a){
  case 'character.add':if(!next.activeCampaignId)fail('Select a campaign first.');next.characters.push({id:a.id,campaignId:next.activeCampaignId,name:a.name.trim(),createdAt:a.createdAt});next.activeCharacterId=a.id;break;
  case 'character.select':if(!next.characters.some(c=>c.id===a.id&&c.campaignId===next.activeCampaignId))fail('Character not found in this campaign.');next.activeCharacterId=a.id;break;
  case 'character.rename':{const c=next.characters.find(c=>c.id===a.id&&c.campaignId===next.activeCampaignId);if(!c)fail('Character not found.');c.name=a.name.trim();break;}
- case 'roll.add':{const r=a.roll;if(r.campaignId!==next.activeCampaignId||r.characterId!==next.activeCharacterId)fail('Roll scope changed.');if(next.rolls.length>=3000)fail('Roll history is full. Export and remove old rolls first.');next.rolls.push(r);break;}
- case 'roll.remove':next.rolls=next.rolls.filter(r=>!(a.ids.includes(r.id)&&r.campaignId===next.activeCampaignId&&r.characterId===next.activeCharacterId));break;
+ case 'roll.add':{const r=a.roll;if(r.campaignId!==next.activeCampaignId||r.characterId!==next.activeCharacterId)fail('Roll scope changed.');if(next.rolls.length>=3000)fail('Roll history is full. Export and remove old rolls first.');next.rolls.push(r);next.copyQueue.push(r.id);break;}
+ case 'roll.remove':next.rolls=next.rolls.filter(r=>!(a.ids.includes(r.id)&&r.campaignId===next.activeCampaignId&&r.characterId===next.activeCharacterId));next.copyQueue=next.copyQueue.filter(id=>next.rolls.some(r=>r.id===id));break;
+ case 'copy.select':{const allowed=new Set(next.rolls.filter(r=>r.campaignId===next.activeCampaignId&&r.characterId===next.activeCharacterId).map(r=>r.id));if(!Array.isArray(a.ids)||!a.ids.every(i=>allowed.has(i)))fail('Invalid copy selection.');next.copyQueue=[...next.copyQueue.filter(i=>!allowed.has(i)),...new Set(a.ids)];break;}
+ case 'sheet.save':{const sh=validateSheet(a.sheet);if(sh.characterId!==next.activeCharacterId)fail('Character changed.');const ctx=sheetContext(next,sh.characterId);if(!ctx)fail('Save character profile first.');next.sheets=next.sheets.filter(x=>x.characterId!==sh.characterId);next.sheets.push(normalizeSheet(ctx,sh));break;}
  case 'preset.add':if(a.preset.campaignId!==next.activeCampaignId||a.preset.characterId!==next.activeCharacterId)fail('Preset scope changed.');next.presets.push(a.preset);break;
  case 'preset.remove':next.presets=next.presets.filter(p=>!(p.id===a.id&&p.campaignId===next.activeCampaignId&&p.characterId===next.activeCharacterId));break;
  case 'content.add':{next.customContent=next.customContent.concat(a.entries);checkBytes(JSON.stringify(next.customContent),CUSTOM_BYTES,'Combined custom content');break;}
@@ -52,5 +57,5 @@ export function applyAction(s,a){
  }
  next.revision++;return validateState(next);
 }
-export function encodeBackup(s){const text=JSON.stringify({format:'dnd-companion-backup',schemaVersion:4,exportedAt:new Date().toISOString(),data:validateState(s)});checkBytes(text,BACKUP_BYTES,'Backup');return text;}
-export function decodeBackup(text){checkBytes(text,BACKUP_BYTES,'Backup');let b;try{b=JSON.parse(text)}catch{fail('Not a valid JSON backup.')}if(!fields(b,['format','schemaVersion','exportedAt','data'])||b.format!=='dnd-companion-backup'||![1,2,3,4].includes(b.schemaVersion)||b.data?.schemaVersion!==b.schemaVersion||typeof b.exportedAt!=='string'||!Number.isFinite(Date.parse(b.exportedAt)))fail('Unsupported backup format.');const state=validateState(b.data);checkBytes(JSON.stringify(state.customContent),CUSTOM_BYTES,'Combined custom content');return state;}
+export function encodeBackup(s){const text=JSON.stringify({format:'dnd-companion-backup',schemaVersion:5,exportedAt:new Date().toISOString(),data:validateState(s)});checkBytes(text,BACKUP_BYTES,'Backup');return text;}
+export function decodeBackup(text){checkBytes(text,BACKUP_BYTES,'Backup');let b;try{b=JSON.parse(text)}catch{fail('Not a valid JSON backup.')}if(!fields(b,['format','schemaVersion','exportedAt','data'])||b.format!=='dnd-companion-backup'||![1,2,3,4,5].includes(b.schemaVersion)||b.data?.schemaVersion!==b.schemaVersion||typeof b.exportedAt!=='string'||!Number.isFinite(Date.parse(b.exportedAt)))fail('Unsupported backup format.');const state=validateState(b.data);checkBytes(JSON.stringify(state.customContent),CUSTOM_BYTES,'Combined custom content');return state;}
