@@ -1,4 +1,6 @@
 # Changelog
+## 0.6.0
+Native local batch conversion, imported subclass/subrace/background selection, saved drafts, manual character profiles and linked dice checks. Schema 4 migration. CI pending.
 ## 0.5.1
 Larger content packs and backups, shared byte limits, bounded import review, improved template download, two regression tests. CI pending.
 ## 0.5.0
