@@ -1,0 +1,4 @@
+import {test} from 'node:test';import assert from 'node:assert/strict';import {simpleFormula,buildFormula,appendSelection,selectedRows,recentRows} from '../src/features/dice/compact.mjs';
+test('simple formula steppers preserve die quantity and signed modifier',()=>{assert.deepEqual(simpleFormula('2d8-3'),{sides:8,quantity:2,modifier:-3});assert.equal(buildFormula(8,3,-3),'3d8-3');assert.equal(buildFormula(20,1,0),'1d20');});
+test('mixed formulas are not mistaken for simple dice controls',()=>{assert.equal(simpleFormula('d20-d4+5'),null);assert.equal(simpleFormula('bad'),null);});
+test('auto selection is unique, chronological export, three recent rows',()=>{const rows=[{id:'d'},{id:'c'},{id:'b'},{id:'a'}];assert.deepEqual(appendSelection(['a'],'a'),['a']);assert.deepEqual(appendSelection(['a'],'d'),['a','d']);assert.deepEqual(selectedRows(rows,['d','a','missing']),[{id:'a'},{id:'d'}]);assert.deepEqual(recentRows(rows),rows.slice(0,3));});
