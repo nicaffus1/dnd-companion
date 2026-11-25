@@ -1,6 +1,6 @@
 # Roadmap
-1. Foundation: shell, navigation, docs, PWA, build, deploy and mobile offline verification.
-2. Data infrastructure
+1. Foundation: deployed; user confirmed visual shell.
+2. Data infrastructure: implemented campaign/character records, ruleset selection, IndexedDB, validated backup/restore. CI and device verification pending.
 3. Core rules engine
 4. Dice roller
 5. Content database
@@ -11,4 +11,3 @@
 10. Journal and Codex
 11. ChatGPT integration
 12. Final refinement
-Phase 1 source ready; deployment and phone tests pending.
