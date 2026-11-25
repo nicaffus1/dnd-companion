@@ -1,7 +1,7 @@
 name: Test and deploy Pages
 on:
   push:
-    branches: [main, release-1.0, dice-overhaul, dice-preview, dice-overhead, dice-resin, dice-colors]
+    branches: [main, release-1.0, dice-overhaul, dice-preview, dice-overhead, dice-resin, dice-colors, dice-clarity]
   workflow_dispatch:
 permissions:
   contents: read
