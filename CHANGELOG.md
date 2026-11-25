@@ -1,4 +1,6 @@
 # Changelog
+## 1.0.0
+Release candidate: companion tracking, atomic death saves and optional ammunition consumption, wand dawn recharge, preparation markers, variant encumbrance, advancement dice history, navigation and accessibility cleanup, schema 10.
 ## 0.11.0
 Customizable context export, versioned JSON updates, selective transactional preview/apply, duplicate and revision checks, import history and latest-import undo. Schema 9. CI pending.
 ## 0.10.0

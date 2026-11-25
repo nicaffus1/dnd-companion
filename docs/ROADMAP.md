@@ -11,3 +11,6 @@
 10. Journal and Codex
 11. ChatGPT integration
 12. Final refinement
+
+## Phase 12 release candidate
+Release branch contains combat and character refinements and interface cleanup. Production promotion requires successful CI. See RELEASE_1.md for limits.
