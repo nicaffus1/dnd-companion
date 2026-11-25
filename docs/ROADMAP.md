@@ -3,7 +3,7 @@
 2. Data infrastructure: deployed, all eight CI tests passed; seven user mobile checks passed. Restore automated test passed, manual restore pending.
 3. Core rules engine: shared calculations, edition strategies, temporary preview and tests; CI and ten mobile checks passed.
 4. Dice roller: v0.4.0 CI passed; v0.4.1 CI and eleven mobile checks passed.
-5. Content database: starter reference index, custom imports and mechanics profile foundation; full mechanical catalog coverage remains outstanding. CI/device verification pending.
+5. Content database: starter reference index, custom imports and mechanics profile foundation; full mechanical catalog coverage remains outstanding. v0.5.0 CI passed, eleven mobile checks passed; v0.5.1 import capacity update pending verification.
 6. Character builder
 7. Character sheet
 8. Inventory

@@ -1,3 +1,4 @@
+import {BACKUP_BYTES,CUSTOM_ENTRIES,CUSTOM_BYTES,checkBytes} from '../content/limits.mjs';
 import {validResult,parseFormula,MODES} from '../features/dice/engine.mjs';
 import {validateCustom} from '../content/catalog.mjs';
 import {validateProfile} from '../content/profile.mjs';
@@ -24,7 +25,7 @@ export function validateState(s){
  const rollIds=new Set(),presetIds=new Set();
  for(const r of s.rolls){if(!fields(r,['id','campaignId','characterId','createdAt','label','formula','mode','groups','modifier','total'])||!id(r.id)||rollIds.has(r.id)||!scoped(r)||!name(r.label)||!Number.isSafeInteger(r.createdAt)||r.createdAt<0||!validResult(r))fail('Invalid roll history.');rollIds.add(r.id);}
  for(const p of s.presets){if(!fields(p,['id','campaignId','characterId','label','formula','mode'])||!id(p.id)||presetIds.has(p.id)||!scoped(p)||!name(p.label)||!MODES.includes(p.mode))fail('Invalid roll preset.');try{parseFormula(p.formula);}catch{fail('Invalid preset formula.');}presetIds.add(p.id);}
- if(!Array.isArray(s.customContent)||s.customContent.length>1000||!Array.isArray(s.profiles)||s.profiles.length>s.characters.length)fail('Invalid content or profiles.');const contentIds=new Set(),profileIds=new Set();for(const c of s.customContent){validateCustom(c);if(contentIds.has(c.id))fail('Duplicate content ID.');contentIds.add(c.id);}for(const p of s.profiles){validateProfile(p);if(!characterIds.has(p.characterId)||profileIds.has(p.characterId))fail('Invalid profile reference.');profileIds.add(p.characterId);}
+ if(!Array.isArray(s.customContent)||s.customContent.length>CUSTOM_ENTRIES||!Array.isArray(s.profiles)||s.profiles.length>s.characters.length)fail('Invalid content or profiles.');const contentIds=new Set(),profileIds=new Set();for(const c of s.customContent){validateCustom(c);if(contentIds.has(c.id))fail('Duplicate content ID.');contentIds.add(c.id);}for(const p of s.profiles){validateProfile(p);if(!characterIds.has(p.characterId)||profileIds.has(p.characterId))fail('Invalid profile reference.');profileIds.add(p.characterId);}
  return s;
 }
 export function applyAction(s,a){
@@ -40,12 +41,12 @@ export function applyAction(s,a){
  case 'roll.remove':next.rolls=next.rolls.filter(r=>!(a.ids.includes(r.id)&&r.campaignId===next.activeCampaignId&&r.characterId===next.activeCharacterId));break;
  case 'preset.add':if(a.preset.campaignId!==next.activeCampaignId||a.preset.characterId!==next.activeCharacterId)fail('Preset scope changed.');next.presets.push(a.preset);break;
  case 'preset.remove':next.presets=next.presets.filter(p=>!(p.id===a.id&&p.campaignId===next.activeCampaignId&&p.characterId===next.activeCharacterId));break;
- case 'content.add':next.customContent.push(...a.entries);break;
+ case 'content.add':{next.customContent=next.customContent.concat(a.entries);checkBytes(JSON.stringify(next.customContent),CUSTOM_BYTES,'Combined custom content');break;}
  case 'profile.save':if(a.profile.characterId!==next.activeCharacterId)fail('Character changed.');next.profiles=next.profiles.filter(p=>p.characterId!==a.profile.characterId);next.profiles.push(a.profile);break;
  case 'restore':{const restored=structuredClone(validateState(a.state));restored.revision=s.revision+1;return validateState(restored);}
  default:fail('Unknown data operation.');
  }
  next.revision++;return validateState(next);
 }
-export function encodeBackup(s){return JSON.stringify({format:'dnd-companion-backup',schemaVersion:3,exportedAt:new Date().toISOString(),data:validateState(s)},null,2);}
-export function decodeBackup(text){if(typeof text!=='string'||text.length>5000000)fail('Backup exceeds 5 MB.');let b;try{b=JSON.parse(text)}catch{fail('Not a valid JSON backup.')}if(!fields(b,['format','schemaVersion','exportedAt','data'])||b.format!=='dnd-companion-backup'||![1,2,3].includes(b.schemaVersion)||b.data?.schemaVersion!==b.schemaVersion||typeof b.exportedAt!=='string'||!Number.isFinite(Date.parse(b.exportedAt)))fail('Unsupported backup format.');return validateState(b.data);}
+export function encodeBackup(s){const text=JSON.stringify({format:'dnd-companion-backup',schemaVersion:3,exportedAt:new Date().toISOString(),data:validateState(s)});checkBytes(text,BACKUP_BYTES,'Backup');return text;}
+export function decodeBackup(text){checkBytes(text,BACKUP_BYTES,'Backup');let b;try{b=JSON.parse(text)}catch{fail('Not a valid JSON backup.')}if(!fields(b,['format','schemaVersion','exportedAt','data'])||b.format!=='dnd-companion-backup'||![1,2,3].includes(b.schemaVersion)||b.data?.schemaVersion!==b.schemaVersion||typeof b.exportedAt!=='string'||!Number.isFinite(Date.parse(b.exportedAt)))fail('Unsupported backup format.');const state=validateState(b.data);checkBytes(JSON.stringify(state.customContent),CUSTOM_BYTES,'Combined custom content');return state;}
