@@ -3,3 +3,6 @@ Separate branch; original v1.0 preserved in legacy-1.0. New entry point uses num
 
 ## Overhead revision
 90-degree orthographic camera; charcoal/gold default with new preference key; felt-style CSS tray; metallic environment lighting and shadows; compact plus/minus selectors. Fixed-step gravity and approximate circular contact impulses with wall bounce and friction, not full polyhedral rigid-body physics. The secure engine still decides results, with orientation corrected during settling. No Phase 2 changes.
+
+## Revision 3
+Minimal borderless default, blue resin and bold white face numbers, empty initial tray. Cannon-es convex rigid bodies with gravity, friction and contact solver. A precomputed physical trajectory is rendered with a hull-preserving rotational symmetry chosen before playback to match the independently secure result. No end-of-roll orientation snap. The d4 uses the existing face-normal convention; verify real-world vertex readability on device. Up to 30 physical dice rendered, all numerical results retained. Phase 2 paused. Visual/mobile acceptance pending.
