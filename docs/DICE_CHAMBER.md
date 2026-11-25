@@ -1,2 +1,5 @@
 # Dice Chamber rebuild — Phase 1
 Separate branch; original v1.0 preserved in legacy-1.0. New entry point uses numbered geometry and a compact rolling screen. Secure randomness remains from existing engine. Geometry tests cover face counts and target orientation. Percentile uses two d10s. Scripted animation only; physics, individual inspection, actual distinct animation styles, saved dice collections, damage grouping, presets/history, sounds and vibration are future phases. Preview does not access or mutate campaign database. Production remains main until explicitly approved. No personal data committed.
+
+## Overhead revision
+90-degree orthographic camera; charcoal/gold default with new preference key; felt-style CSS tray; metallic environment lighting and shadows; compact plus/minus selectors. Fixed-step gravity and approximate circular contact impulses with wall bounce and friction, not full polyhedral rigid-body physics. The secure engine still decides results, with orientation corrected during settling. No Phase 2 changes.
