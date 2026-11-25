@@ -12,3 +12,6 @@ Authorized after Clarity approval. Preserve renderer and appearance settings. In
 
 ## Phase 2B
 Individual numeric die buttons reroll only the selected die and recalculate kept values and totals. Natural indicators use the kept single d20, not discarded advantage dice. Optional per-row automatic critical links typed normal damage to the preceding attack until the next attack, doubles dice only; rerolling the linked attack adds/removes critical dice while preserving base rolls. Existing presets default to off. Renderer replays the tray on reroll, even when other numerical values are unchanged. Phase 2C/D separate.
+
+## Phase 2B quick presets
+Main page has collapsible saved rolls beneath existing controls, pinned favorites, searchable folder groups and one-tap roll using existing secure engine and shared tray. Management and home share a single persisted preset list. Group copy uses the actual preset name. Phase 2C remains on hold.
