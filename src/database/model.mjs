@@ -6,8 +6,9 @@ import {validateBuild,reviewBuild} from '../content/builder.mjs';
 import {validateSheet,sheetContext,normalizeSheet} from '../content/sheet.mjs';
 import {validateInventory,initialInventory,rechargeInventory} from '../content/inventory.mjs';
 import {progressionContext,progressionFor,validateProgression,applyAdvance} from '../content/progression.mjs';
-export const SCHEMA_VERSION=7;
-export const emptyState=()=>({schemaVersion:7,progressions:[],inventories:[],sheets:[],copyQueue:[],builds:[],customContent:[],profiles:[],revision:0,campaigns:[],characters:[],activeCampaignId:null,activeCharacterId:null,rolls:[],presets:[]});
+import {validateWorld,saveWorldRecord,deleteWorldRecord,saveWorldLink} from '../content/world.mjs';
+export const SCHEMA_VERSION=8;
+export const emptyState=()=>({schemaVersion:8,worldRecords:[],worldLinks:[],progressions:[],inventories:[],sheets:[],copyQueue:[],builds:[],customContent:[],profiles:[],revision:0,campaigns:[],characters:[],activeCampaignId:null,activeCharacterId:null,rolls:[],presets:[]});
 const fail=m=>{throw new Error(m)};
 const object=x=>x!==null&&typeof x==='object'&&!Array.isArray(x);
 const id=x=>typeof x==='string'&&/^[a-zA-Z0-9_-]{1,100}$/.test(x);
@@ -21,7 +22,8 @@ export function validateState(s){
  if(s?.schemaVersion===4&&fields(s,['schemaVersion','revision','campaigns','characters','activeCampaignId','activeCharacterId','rolls','presets','customContent','profiles','builds']))s={...s,schemaVersion:5,sheets:[],copyQueue:[]};
  if(s?.schemaVersion===5&&fields(s,['schemaVersion','revision','campaigns','characters','activeCampaignId','activeCharacterId','rolls','presets','customContent','profiles','builds','sheets','copyQueue']))s={...s,schemaVersion:6,inventories:[]};
  if(s?.schemaVersion===6&&fields(s,['schemaVersion','revision','campaigns','characters','activeCampaignId','activeCharacterId','rolls','presets','customContent','profiles','builds','sheets','copyQueue','inventories']))s={...s,schemaVersion:7,progressions:[]};
- if(!fields(s,['schemaVersion','revision','campaigns','characters','activeCampaignId','activeCharacterId','rolls','presets','customContent','profiles','builds','sheets','copyQueue','inventories','progressions'])||s.schemaVersion!==7||!Number.isSafeInteger(s.revision)||s.revision<0||s.revision>=Number.MAX_SAFE_INTEGER)fail('Unsupported or invalid data schema.');
+ if(s?.schemaVersion===7&&fields(s,['schemaVersion','revision','campaigns','characters','activeCampaignId','activeCharacterId','rolls','presets','customContent','profiles','builds','sheets','copyQueue','inventories','progressions']))s={...s,schemaVersion:8,worldRecords:[],worldLinks:[]};
+ if(!fields(s,['schemaVersion','revision','campaigns','characters','activeCampaignId','activeCharacterId','rolls','presets','customContent','profiles','builds','sheets','copyQueue','inventories','progressions','worldRecords','worldLinks'])||s.schemaVersion!==8||!Number.isSafeInteger(s.revision)||s.revision<0||s.revision>=Number.MAX_SAFE_INTEGER)fail('Unsupported or invalid data schema.');
  if(!Array.isArray(s.campaigns)||!Array.isArray(s.characters)||s.campaigns.length>10000||s.characters.length>10000)fail('Invalid record collections.');
  const campaignIds=new Set(),characterIds=new Set();
  for(const c of s.campaigns){if(!fields(c,['id','name','ruleset','createdAt'])||!id(c.id)||!name(c.name)||!rules(c.ruleset)||!Number.isSafeInteger(c.createdAt)||c.createdAt<0||campaignIds.has(c.id))fail('Invalid or duplicate campaign.');campaignIds.add(c.id);}
@@ -38,11 +40,16 @@ export function validateState(s){
  if(!Array.isArray(s.sheets)||s.sheets.length>s.characters.length||!Array.isArray(s.copyQueue)||new Set(s.copyQueue).size!==s.copyQueue.length||!s.copyQueue.every(i=>rollIds.has(i)))fail('Invalid sheet or copy queue.');const sheetIds=new Set();for(const sh of s.sheets){validateSheet(sh);if(!profileIds.has(sh.characterId)||sheetIds.has(sh.characterId))fail('Invalid sheet reference.');sheetIds.add(sh.characterId);}
  if(!Array.isArray(s.inventories)||s.inventories.length>s.characters.length)fail('Invalid inventories.');const invIds=new Set();for(const v of s.inventories){validateInventory(v);if(!characterIds.has(v.characterId)||invIds.has(v.characterId))fail('Invalid inventory reference.');invIds.add(v.characterId);}
  if(!Array.isArray(s.progressions)||s.progressions.length>s.characters.length)fail('Invalid progression records.');const prIds=new Set();for(const p of s.progressions){const profile=s.profiles.find(x=>x.characterId===p.characterId);if(!profile||prIds.has(p.characterId))fail('Invalid progression reference.');validateProgression(p,profile.level);prIds.add(p.characterId);}
+ validateWorld(s);
  return s;
 }
 export function applyAction(s,a){
  s=validateState(s);const next=structuredClone(s);
  switch(a.type){
+ case 'world.save':saveWorldRecord(next,a.record);break;
+ case 'world.remove':deleteWorldRecord(next,a.id);break;
+ case 'world.link.save':saveWorldLink(next,a.link);break;
+ case 'world.link.remove':if(!next.worldLinks.some(l=>l.id===a.id&&l.campaignId===next.activeCampaignId))fail('Relationship not found.');next.worldLinks=next.worldLinks.filter(l=>l.id!==a.id);break;
  case 'campaign.add':next.campaigns.push({id:a.id,name:a.name.trim(),ruleset:a.ruleset,createdAt:a.createdAt});next.activeCampaignId=a.id;next.activeCharacterId=null;break;
  case 'campaign.select':if(!next.campaigns.some(c=>c.id===a.id))fail('Campaign not found.');next.activeCampaignId=a.id;next.activeCharacterId=next.characters.find(c=>c.campaignId===a.id)?.id??null;break;
  case 'campaign.rename':{const c=next.campaigns.find(c=>c.id===a.id);if(!c)fail('Campaign not found.');c.name=a.name.trim();break;}
@@ -67,5 +74,5 @@ export function applyAction(s,a){
  }
  next.revision++;return validateState(next);
 }
-export function encodeBackup(s){const text=JSON.stringify({format:'dnd-companion-backup',schemaVersion:7,exportedAt:new Date().toISOString(),data:validateState(s)});checkBytes(text,BACKUP_BYTES,'Backup');return text;}
-export function decodeBackup(text){checkBytes(text,BACKUP_BYTES,'Backup');let b;try{b=JSON.parse(text)}catch{fail('Not a valid JSON backup.')}if(!fields(b,['format','schemaVersion','exportedAt','data'])||b.format!=='dnd-companion-backup'||![1,2,3,4,5,6,7].includes(b.schemaVersion)||b.data?.schemaVersion!==b.schemaVersion||typeof b.exportedAt!=='string'||!Number.isFinite(Date.parse(b.exportedAt)))fail('Unsupported backup format.');const state=validateState(b.data);checkBytes(JSON.stringify(state.customContent),CUSTOM_BYTES,'Combined custom content');return state;}
+export function encodeBackup(s){const text=JSON.stringify({format:'dnd-companion-backup',schemaVersion:8,exportedAt:new Date().toISOString(),data:validateState(s)});checkBytes(text,BACKUP_BYTES,'Backup');return text;}
+export function decodeBackup(text){checkBytes(text,BACKUP_BYTES,'Backup');let b;try{b=JSON.parse(text)}catch{fail('Not a valid JSON backup.')}if(!fields(b,['format','schemaVersion','exportedAt','data'])||b.format!=='dnd-companion-backup'||![1,2,3,4,5,6,7,8].includes(b.schemaVersion)||b.data?.schemaVersion!==b.schemaVersion||typeof b.exportedAt!=='string'||!Number.isFinite(Date.parse(b.exportedAt)))fail('Unsupported backup format.');const state=validateState(b.data);checkBytes(JSON.stringify(state.customContent),CUSTOM_BYTES,'Combined custom content');return state;}

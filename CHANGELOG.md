@@ -1,4 +1,6 @@
 # Changelog
+## 0.10.0
+Campaign-scoped journal and codex, chapters, sessions, timeline, editable records, tags, statuses, directional relationships, imported creature references, structured world export and schema 8 backups. CI pending.
 ## 0.8.0
 Persistent inventory, starting gear, equipped AC and attacks, proficiency and attunement, nested containers, currency, weight, manual charges and item overrides. Schema 6 migration. CI pending.
 ## 0.7.0
