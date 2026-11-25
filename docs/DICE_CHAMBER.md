@@ -6,3 +6,6 @@ Separate branch; original v1.0 preserved in legacy-1.0. New entry point uses num
 
 ## Revision 3
 Minimal borderless default, blue resin and bold white face numbers, empty initial tray. Cannon-es convex rigid bodies with gravity, friction and contact solver. A precomputed physical trajectory is rendered with a hull-preserving rotational symmetry chosen before playback to match the independently secure result. No end-of-roll orientation snap. The d4 uses the existing face-normal convention; verify real-world vertex readability on device. Up to 30 physical dice rendered, all numerical results retained. Phase 2 paused. Visual/mobile acceptance pending.
+
+## Phase 2A — saved rolls
+Authorized after Clarity approval. Preserve renderer and appearance settings. Independent roll rows with typed damage, flat values, per-row modes, folders, favorites, edit/duplicate/delete, local persistence and three copy formats; no grand total across attacks. Starter Brown Bear example and mixed damage. History, per-die reroll, automatic critical linking, backup and other later work remain separate. Prior unresolved physical appearance/accuracy issues are not claimed fixed.
