@@ -1,4 +1,6 @@
 # Changelog
+## 0.8.0
+Persistent inventory, starting gear, equipped AC and attacks, proficiency and attunement, nested containers, currency, weight, manual charges and item overrides. Schema 6 migration. CI pending.
 ## 0.7.0
 Interactive character sheet, persistent combat state and shared copy queue, health/AC overrides, checks, attack and damage rolls, slot and resource tracking, rests, conditions, exhaustion, imported feature references. Schema 5. CI pending.
 ## 0.6.0
