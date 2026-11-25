@@ -1,0 +1,27 @@
+{
+  "format": "dnd-companion-update",
+  "schemaVersion": 1,
+  "importId": "example-import-001",
+  "campaignId": "REPLACE_CAMPAIGN_ID",
+  "characterId": "REPLACE_CHARACTER_ID",
+  "baseRevision": 0,
+  "changes": [
+    {
+      "id": "damage-1",
+      "op": "health",
+      "kind": "damage",
+      "amount": 5
+    },
+    {
+      "id": "gold-1",
+      "op": "currency",
+      "coin": "gp",
+      "delta": 10
+    },
+    {
+      "id": "xp-1",
+      "op": "xp",
+      "delta": 100
+    }
+  ]
+}

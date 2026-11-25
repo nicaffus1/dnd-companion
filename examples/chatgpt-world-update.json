@@ -1,0 +1,65 @@
+{
+  "format": "dnd-companion-update",
+  "schemaVersion": 1,
+  "importId": "example-world-001",
+  "campaignId": "REPLACE_CAMPAIGN_ID",
+  "characterId": null,
+  "baseRevision": 0,
+  "changes": [
+    {
+      "id": "npc-1",
+      "op": "world.save",
+      "record": {
+        "id": "example-npc",
+        "campaignId": "REPLACE_CAMPAIGN_ID",
+        "kind": "npc",
+        "title": "Example guide",
+        "status": "active",
+        "tags": [
+          "example"
+        ],
+        "body": "A helpful guide.",
+        "summary": "",
+        "date": "",
+        "chapterId": null,
+        "sessionId": null,
+        "monsterId": null,
+        "createdAt": 1,
+        "updatedAt": 1
+      }
+    },
+    {
+      "id": "quest-1",
+      "op": "world.save",
+      "record": {
+        "id": "example-quest",
+        "campaignId": "REPLACE_CAMPAIGN_ID",
+        "kind": "quest",
+        "title": "Example quest",
+        "status": "planned",
+        "tags": [],
+        "body": "Find a lost map.",
+        "summary": "",
+        "date": "",
+        "chapterId": null,
+        "sessionId": null,
+        "monsterId": null,
+        "createdAt": 1,
+        "updatedAt": 1
+      }
+    },
+    {
+      "id": "link-1",
+      "op": "link.save",
+      "link": {
+        "id": "example-link",
+        "campaignId": "REPLACE_CAMPAIGN_ID",
+        "fromId": "example-npc",
+        "toId": "example-quest",
+        "label": "Quest contact",
+        "notes": "",
+        "createdAt": 1
+      }
+    }
+  ]
+}

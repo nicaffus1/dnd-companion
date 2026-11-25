@@ -1,4 +1,6 @@
 # Changelog
+## 0.11.0
+Customizable context export, versioned JSON updates, selective transactional preview/apply, duplicate and revision checks, import history and latest-import undo. Schema 9. CI pending.
 ## 0.10.0
 Campaign-scoped journal and codex, chapters, sessions, timeline, editable records, tags, statuses, directional relationships, imported creature references, structured world export and schema 8 backups. CI pending.
 ## 0.8.0

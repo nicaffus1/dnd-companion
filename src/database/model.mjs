@@ -7,8 +7,9 @@ import {validateSheet,sheetContext,normalizeSheet} from '../content/sheet.mjs';
 import {validateInventory,initialInventory,rechargeInventory} from '../content/inventory.mjs';
 import {progressionContext,progressionFor,validateProgression,applyAdvance} from '../content/progression.mjs';
 import {validateWorld,saveWorldRecord,deleteWorldRecord,saveWorldLink} from '../content/world.mjs';
-export const SCHEMA_VERSION=8;
-export const emptyState=()=>({schemaVersion:8,worldRecords:[],worldLinks:[],progressions:[],inventories:[],sheets:[],copyQueue:[],builds:[],customContent:[],profiles:[],revision:0,campaigns:[],characters:[],activeCampaignId:null,activeCharacterId:null,rolls:[],presets:[]});
+import {validateExchange,applyUpdate,undoUpdate,restoreScope} from '../content/exchange.mjs';
+export const SCHEMA_VERSION=9;
+export const emptyState=()=>({schemaVersion:9,importHistory:[],importUndo:null,worldRecords:[],worldLinks:[],progressions:[],inventories:[],sheets:[],copyQueue:[],builds:[],customContent:[],profiles:[],revision:0,campaigns:[],characters:[],activeCampaignId:null,activeCharacterId:null,rolls:[],presets:[]});
 const fail=m=>{throw new Error(m)};
 const object=x=>x!==null&&typeof x==='object'&&!Array.isArray(x);
 const id=x=>typeof x==='string'&&/^[a-zA-Z0-9_-]{1,100}$/.test(x);
@@ -23,7 +24,8 @@ export function validateState(s){
  if(s?.schemaVersion===5&&fields(s,['schemaVersion','revision','campaigns','characters','activeCampaignId','activeCharacterId','rolls','presets','customContent','profiles','builds','sheets','copyQueue']))s={...s,schemaVersion:6,inventories:[]};
  if(s?.schemaVersion===6&&fields(s,['schemaVersion','revision','campaigns','characters','activeCampaignId','activeCharacterId','rolls','presets','customContent','profiles','builds','sheets','copyQueue','inventories']))s={...s,schemaVersion:7,progressions:[]};
  if(s?.schemaVersion===7&&fields(s,['schemaVersion','revision','campaigns','characters','activeCampaignId','activeCharacterId','rolls','presets','customContent','profiles','builds','sheets','copyQueue','inventories','progressions']))s={...s,schemaVersion:8,worldRecords:[],worldLinks:[]};
- if(!fields(s,['schemaVersion','revision','campaigns','characters','activeCampaignId','activeCharacterId','rolls','presets','customContent','profiles','builds','sheets','copyQueue','inventories','progressions','worldRecords','worldLinks'])||s.schemaVersion!==8||!Number.isSafeInteger(s.revision)||s.revision<0||s.revision>=Number.MAX_SAFE_INTEGER)fail('Unsupported or invalid data schema.');
+ if(s?.schemaVersion===8&&fields(s,['schemaVersion','revision','campaigns','characters','activeCampaignId','activeCharacterId','rolls','presets','customContent','profiles','builds','sheets','copyQueue','inventories','progressions','worldRecords','worldLinks']))s={...s,schemaVersion:9,importHistory:[],importUndo:null};
+ if(!fields(s,['schemaVersion','revision','campaigns','characters','activeCampaignId','activeCharacterId','rolls','presets','customContent','profiles','builds','sheets','copyQueue','inventories','progressions','worldRecords','worldLinks','importHistory','importUndo'])||s.schemaVersion!==9||!Number.isSafeInteger(s.revision)||s.revision<0||s.revision>=Number.MAX_SAFE_INTEGER)fail('Unsupported or invalid data schema.');
  if(!Array.isArray(s.campaigns)||!Array.isArray(s.characters)||s.campaigns.length>10000||s.characters.length>10000)fail('Invalid record collections.');
  const campaignIds=new Set(),characterIds=new Set();
  for(const c of s.campaigns){if(!fields(c,['id','name','ruleset','createdAt'])||!id(c.id)||!name(c.name)||!rules(c.ruleset)||!Number.isSafeInteger(c.createdAt)||c.createdAt<0||campaignIds.has(c.id))fail('Invalid or duplicate campaign.');campaignIds.add(c.id);}
@@ -40,11 +42,11 @@ export function validateState(s){
  if(!Array.isArray(s.sheets)||s.sheets.length>s.characters.length||!Array.isArray(s.copyQueue)||new Set(s.copyQueue).size!==s.copyQueue.length||!s.copyQueue.every(i=>rollIds.has(i)))fail('Invalid sheet or copy queue.');const sheetIds=new Set();for(const sh of s.sheets){validateSheet(sh);if(!profileIds.has(sh.characterId)||sheetIds.has(sh.characterId))fail('Invalid sheet reference.');sheetIds.add(sh.characterId);}
  if(!Array.isArray(s.inventories)||s.inventories.length>s.characters.length)fail('Invalid inventories.');const invIds=new Set();for(const v of s.inventories){validateInventory(v);if(!characterIds.has(v.characterId)||invIds.has(v.characterId))fail('Invalid inventory reference.');invIds.add(v.characterId);}
  if(!Array.isArray(s.progressions)||s.progressions.length>s.characters.length)fail('Invalid progression records.');const prIds=new Set();for(const p of s.progressions){const profile=s.profiles.find(x=>x.characterId===p.characterId);if(!profile||prIds.has(p.characterId))fail('Invalid progression reference.');validateProgression(p,profile.level);prIds.add(p.characterId);}
- validateWorld(s);
+ validateWorld(s);validateExchange(s);if(s.importUndo){const u=s.importUndo;validateState({...restoreScope(s,u.campaignId,u.characterId,u.snapshot),importUndo:null});}
  return s;
 }
 export function applyAction(s,a){
- s=validateState(s);const next=structuredClone(s);
+ s=validateState(s);if(a.type==='exchange.apply')return validateState(applyUpdate(s,a.envelope,a.selected,a.at,applyAction));if(a.type==='exchange.undo')return validateState(undoUpdate(s,a.importId));const next=structuredClone(s);next.importUndo=null;
  switch(a.type){
  case 'world.save':saveWorldRecord(next,a.record);break;
  case 'world.remove':deleteWorldRecord(next,a.id);break;
@@ -69,10 +71,10 @@ export function applyAction(s,a){
  case 'content.add':{next.customContent=next.customContent.concat(a.entries);checkBytes(JSON.stringify(next.customContent),CUSTOM_BYTES,'Combined custom content');break;}
  case 'build.save':{const b=validateBuild(a.build);validateProfile(b.profile);if(b.characterId!==next.activeCharacterId)fail('Character changed.');if(a.finish){const p=next.progressions.find(x=>x.characterId===b.characterId);if(p&&p.levels.length!==b.profile.level)fail('Use level progression to change character level.');const edition=next.campaigns.find(c=>c.id===next.activeCampaignId).ruleset;const warnings=reviewBuild(b,next,edition);if(warnings.length&&!b.override)fail(warnings.join(' '));next.profiles=next.profiles.filter(p=>p.characterId!==b.characterId);next.profiles.push(b.profile);}next.builds=next.builds.filter(x=>x.characterId!==b.characterId);next.builds.push({...b,complete:!!a.finish});if(a.finish){const existing=next.inventories.find(x=>x.characterId===b.characterId);if(!existing){next.inventories.push(initialInventory(next,b.characterId));}else if(!existing.startingTransferred){const starting=initialInventory(next,b.characterId);existing.items.push(...starting.items);existing.startingTransferred=true;}}break;}
  case 'profile.save':if(a.profile.characterId!==next.activeCharacterId)fail('Character changed.');next.profiles=next.profiles.filter(p=>p.characterId!==a.profile.characterId);next.profiles.push(a.profile);break;
- case 'restore':{const restored=structuredClone(validateState(a.state));restored.revision=s.revision+1;return validateState(restored);}
+ case 'restore':{const restored=structuredClone(validateState(a.state));restored.importUndo=null;restored.revision=Math.max(s.revision,restored.revision)+1;return validateState(restored);}
  default:fail('Unknown data operation.');
  }
  next.revision++;return validateState(next);
 }
-export function encodeBackup(s){const text=JSON.stringify({format:'dnd-companion-backup',schemaVersion:8,exportedAt:new Date().toISOString(),data:validateState(s)});checkBytes(text,BACKUP_BYTES,'Backup');return text;}
-export function decodeBackup(text){checkBytes(text,BACKUP_BYTES,'Backup');let b;try{b=JSON.parse(text)}catch{fail('Not a valid JSON backup.')}if(!fields(b,['format','schemaVersion','exportedAt','data'])||b.format!=='dnd-companion-backup'||![1,2,3,4,5,6,7,8].includes(b.schemaVersion)||b.data?.schemaVersion!==b.schemaVersion||typeof b.exportedAt!=='string'||!Number.isFinite(Date.parse(b.exportedAt)))fail('Unsupported backup format.');const state=validateState(b.data);checkBytes(JSON.stringify(state.customContent),CUSTOM_BYTES,'Combined custom content');return state;}
+export function encodeBackup(s){const text=JSON.stringify({format:'dnd-companion-backup',schemaVersion:9,exportedAt:new Date().toISOString(),data:validateState(s)});checkBytes(text,BACKUP_BYTES,'Backup');return text;}
+export function decodeBackup(text){checkBytes(text,BACKUP_BYTES,'Backup');let b;try{b=JSON.parse(text)}catch{fail('Not a valid JSON backup.')}if(!fields(b,['format','schemaVersion','exportedAt','data'])||b.format!=='dnd-companion-backup'||![1,2,3,4,5,6,7,8,9].includes(b.schemaVersion)||b.data?.schemaVersion!==b.schemaVersion||typeof b.exportedAt!=='string'||!Number.isFinite(Date.parse(b.exportedAt)))fail('Unsupported backup format.');const state=validateState(b.data);checkBytes(JSON.stringify(state.customContent),CUSTOM_BYTES,'Combined custom content');return state;}

@@ -3,3 +3,6 @@ Copy selected roll results, character state and campaign context. Versioned JSON
 
 ## Phase 10 world context
 The read-only world export uses format dnd-companion-world, schemaVersion 1, campaign, baseRevision, records, relationships and monsterReferences. IDs are stable and campaign-scoped. Monster references contain ID, name and source, not full imported content. This is not an update envelope; reviewed transactional import is Phase 11.
+
+## Phase 11
+Settings > ChatGPT integration provides export, import and history. Copy DM instructions from the app; copy or download chosen context sections. Context format dnd-companion-context v1 includes exact campaign/character IDs and baseRevision. Update format dnd-companion-update v1 requires unique importId, exact scope, baseRevision, and 1–100 uniquely identified changes. Supported operations are defined in src/content/exchange.mjs DM_PROTOCOL. Preview simulates selected changes using existing validated actions in listed order. Apply commits once in the IndexedDB transaction. Undo restores the prior scoped records only if no subsequent saved action occurred. Duplicate IDs remain blocked after undo; any subsequent normal save invalidates undo. Backup restore uses a revision greater than both current and incoming revisions. No API or network transmission. Examples are illustrative, not production data.
