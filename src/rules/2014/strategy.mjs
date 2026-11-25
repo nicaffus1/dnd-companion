@@ -1,0 +1,2 @@
+import {integer,recoveredHitDice} from '../shared/core.mjs';
+export const legacy=Object.freeze({id:'2014',halfCasterLevels:level=>Math.floor(integer(level,0,20)/2),thirdCasterLevels:level=>Math.floor(integer(level,0,20)/3),recoverHitDice:(level,spent)=>recoveredHitDice(level,spent,false),exhaustion:level=>{integer(level,0,6);return {abilityCheckDisadvantage:level>=1,speedMultiplier:level>=5?0:level>=2?0.5:1,attackSaveDisadvantage:level>=3,maxHpMultiplier:level>=4?0.5:1,dead:level===6,d20Penalty:0};}});

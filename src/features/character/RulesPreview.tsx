@@ -1,0 +1,10 @@
+import {useState} from 'react';
+import {abilityModifier,proficiencyBonus,skillModifier,spellcasting,armorClass,initiative,maxHitPoints,xpForLevel,rulesFor} from '../../rules/index.mjs';
+import type {Ruleset} from '../../database/types';
+const signed=(n:number)=>n>=0?'+'+n:String(n);
+export function RulesPreview({ruleset}:{ruleset:Ruleset}){
+ const [level,setLevel]=useState(5);const [score,setScore]=useState(16);const [trained,setTrained]=useState(1);
+ const stats={str:score,dex:score,con:score,int:score,wis:score,cha:score};
+ const spell=spellcasting(score,level);const values=[['Ability modifier',signed(abilityModifier(score))],['Proficiency',signed(proficiencyBonus(level))],['Perception',signed(skillModifier('perception',stats,level,{proficiency:trained}))],['Unarmored AC',armorClass(score)],['Initiative',signed(initiative(score,level))],['Spell attack',signed(spell.attack)],['Spell save DC',spell.dc],['HP (d8 fixed)',maxHitPoints(score,Array.from({length:level},()=>({die:8})))],['XP threshold',xpForLevel(level).toLocaleString()],['Hit dice recovered',rulesFor(ruleset).recoverHitDice(level,level)]];
+ return <details className="data-panel rules-preview"><summary>Rules engine preview · {ruleset}</summary><p className="muted">Temporary test calculator. All six ability scores use the same sample value. Nothing is saved to your character. Hit dice recovery assumes all dice are spent.</p><div className="rules-inputs"><label>Level<select value={level} onChange={e=>setLevel(Number(e.target.value))}>{Array.from({length:20},(_,i)=><option key={i+1}>{i+1}</option>)}</select></label><label>Ability score<select value={score} onChange={e=>setScore(Number(e.target.value))}>{Array.from({length:30},(_,i)=><option key={i+1}>{i+1}</option>)}</select></label></div><label>Perception training<select value={trained} onChange={e=>setTrained(Number(e.target.value))}><option value={0}>Untrained</option><option value={1}>Proficient</option><option value={2}>Expertise</option></select></label><div className="rules-grid">{values.map(([label,value])=><div key={label}><small>{label}</small><strong>{value}</strong></div>)}</div></details>;
+}
