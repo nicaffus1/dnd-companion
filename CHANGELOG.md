@@ -1,4 +1,6 @@
 # Changelog
+## 0.5.0
+Starter SRD reference catalog, custom entries, reviewed JSON imports, schema 3 migration, mechanics profile and linked check calculator, four tests. CI pending.
 ## 0.4.1
 Compact dice workspace: collapsible campaign header, three views, illustrated die controls, quantity/modifier steppers, 650 ms animations, latest three rolls, automatic selection and clear-on-success grouped copy. No schema changes. Three new tests; CI/device verification pending.
 ## 0.4.0
