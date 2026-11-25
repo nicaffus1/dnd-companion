@@ -9,3 +9,6 @@ Minimal borderless default, blue resin and bold white face numbers, empty initia
 
 ## Phase 2A — saved rolls
 Authorized after Clarity approval. Preserve renderer and appearance settings. Independent roll rows with typed damage, flat values, per-row modes, folders, favorites, edit/duplicate/delete, local persistence and three copy formats; no grand total across attacks. Starter Brown Bear example and mixed damage. History, per-die reroll, automatic critical linking, backup and other later work remain separate. Prior unresolved physical appearance/accuracy issues are not claimed fixed.
+
+## Phase 2B
+Individual numeric die buttons reroll only the selected die and recalculate kept values and totals. Natural indicators use the kept single d20, not discarded advantage dice. Optional per-row automatic critical links typed normal damage to the preceding attack until the next attack, doubles dice only; rerolling the linked attack adds/removes critical dice while preserving base rolls. Existing presets default to off. Renderer replays the tray on reroll, even when other numerical values are unchanged. Phase 2C/D separate.
