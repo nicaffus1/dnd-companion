@@ -1,0 +1,14 @@
+import * as T from 'three';
+// Merge coplanar triangles into physical faces, including the pentagons of d12.
+export function polyhedron(sides){
+let g;if(sides===4)g=new T.TetrahedronGeometry(1);else if(sides===6)g=new T.BoxGeometry(1.16,1.16,1.16);else if(sides===8)g=new T.OctahedronGeometry(1);else if(sides===12)g=new T.DodecahedronGeometry(1);else if(sides===20)g=new T.IcosahedronGeometry(1);else if(sides===10){
+// Pentagonal trapezohedron: alternating ring heights chosen for planar kites.
+const vs=[new T.Vector3(0,1,0),new T.Vector3(0,-1,0)];const h=(1-Math.cos(Math.PI/5))/(1+Math.cos(Math.PI/5));for(let i=0;i<10;i++)vs.push(new T.Vector3(.86*Math.cos(i*Math.PI/5),i%2?-h:h,.86*Math.sin(i*Math.PI/5)));
+const pos=[];for(let i=0;i<10;i++){const a=vs[2+i],b=vs[2+(i+1)%10],c=vs[2+(i+2)%10],p=vs[i%2];for(const tri of [[p,a,b],[p,b,c]]){const n=tri[1].clone().sub(tri[0]).cross(tri[2].clone().sub(tri[0]));if(n.dot(tri[0])<0)tri.reverse();for(const v of tri)pos.push(...v.toArray());}}g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(pos,3));g.computeVertexNormals();
+}else throw Error('Unsupported physical die');
+const raw=g.index?g.toNonIndexed():g;const p=raw.attributes.position;const faces=[];for(let i=0;i<p.count;i+=3){const vs=[0,1,2].map(j=>new T.Vector3().fromBufferAttribute(p,i+j));const n=vs[1].clone().sub(vs[0]).cross(vs[2].clone().sub(vs[0])).normalize();const dist=n.dot(vs[0]);let face=faces.find(f=>f.normal.dot(n)>0.99999&&Math.abs(f.dist-dist)<.00001);if(!face){face={normal:n,dist,vertices:[]};faces.push(face);}for(const v of vs)if(!face.vertices.some(w=>w.distanceTo(v)<.00001))face.vertices.push(v);}
+if(raw!==g)raw.dispose();g.dispose();if(faces.length!==sides)throw Error('Incorrect face count: '+faces.length+' for d'+sides);
+return faces.map((f,i)=>{const center=f.vertices.reduce((a,v)=>a.add(v),new T.Vector3()).multiplyScalar(1/f.vertices.length);const u=f.vertices[0].clone().sub(center).normalize();const v=f.normal.clone().cross(u).normalize();const verts=f.vertices.slice().sort((a,b)=>Math.atan2(a.clone().sub(center).dot(v),a.clone().sub(center).dot(u))-Math.atan2(b.clone().sub(center).dot(v),b.clone().sub(center).dot(u)));return {...f,vertices:verts,center,u,v,value:i+1};});
+}
+export function settleQuaternion(face){return new T.Quaternion().setFromUnitVectors(face.normal,new T.Vector3(0,1,0));}
+export function physicalDice(sides,value){if(sides!==100)return [{sides,value,label:String(value)}];const n=value===100?0:value;return [{sides:10,value:Math.floor(n/10)+1,percentile:true,label:String(Math.floor(n/10)*10).padStart(2,'0')},{sides:10,value:n%10+1,zeroBased:true,label:String(n%10)}];}
