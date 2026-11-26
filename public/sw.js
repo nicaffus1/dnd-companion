@@ -1,4 +1,5 @@
 const PREFIX='dnd-shell-';const CACHE=PREFIX+'__BUILD_ID__';const ASSETS=__PRECACHE_ASSETS__;
-self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)).then(()=>self.skipWaiting())));
+const scope=self.registration.scope;const absolute=p=>new URL(p,scope).href;const shell=absolute('index.html');
+self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS.map(absolute))).then(()=>self.skipWaiting())));
 self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith(PREFIX)&&k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
-self.addEventListener('fetch',e=>{if(e.request.method!=='GET'||!e.request.url.startsWith(self.registration.scope))return;e.respondWith(caches.open(CACHE).then(async c=>e.request.mode==='navigate'?fetch(e.request).then(r=>r.ok?r:c.match('./index.html').then(v=>v||r)).catch(()=>c.match('./index.html')):(await c.match(e.request)||fetch(e.request))));});
+self.addEventListener('fetch',e=>{if(e.request.method!=='GET'||!e.request.url.startsWith(scope))return;e.respondWith((async()=>{const c=await caches.open(CACHE);if(e.request.mode==='navigate'){try{const r=await fetch(e.request);if(r.ok)return r;}catch{}const fallback=await c.match(shell);return fallback||Response.error();}const cached=await c.match(e.request.url);return cached||fetch(e.request);})());});
