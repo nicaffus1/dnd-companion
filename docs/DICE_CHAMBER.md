@@ -15,3 +15,6 @@ Individual numeric die buttons reroll only the selected die and recalculate kept
 
 ## Phase 2B quick presets
 Main page has collapsible saved rolls beneath existing controls, pinned favorites, searchable folder groups and one-tap roll using existing secure engine and shared tray. Management and home share a single persisted preset list. Group copy uses the actual preset name. Phase 2C remains on hold.
+
+## Phase 2C
+Local history retains the latest 500 roll/reroll/repeat snapshots, newest first, with search, source/preset/type/mode filters, copy formats, fresh repeat from snapshot, individual delete and confirmed clear. Repeat preserves original formulas and auto-critical links even if a preset was edited or deleted. No cloud sync or backup yet. Phase 2D held.
