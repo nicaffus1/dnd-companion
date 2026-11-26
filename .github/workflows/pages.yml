@@ -1,7 +1,7 @@
 name: Test and deploy Pages
 on:
   push:
-    branches: [main, release-1.0, dice-overhaul, dice-preview, dice-overhead, dice-resin, dice-colors, dice-clarity, phase2-presets, phase2-advanced, phase2-home, phase2-history]
+    branches: [main, release-1.0, dice-overhaul, dice-preview, dice-overhead, dice-resin, dice-colors, dice-clarity, phase2-presets, phase2-advanced, phase2-home, phase2-history, phase2-backup]
   workflow_dispatch:
 permissions:
   contents: read
@@ -25,6 +25,9 @@ jobs:
       - run: npm install
       - run: npm test
       - run: npm run build
+      - run: npm install --no-save playwright
+      - run: npx playwright install --with-deps chromium
+      - run: node scripts/offline-check.mjs
       - if: github.ref == 'refs/heads/main'
         uses: actions/configure-pages@v5
       - if: github.ref == 'refs/heads/main'

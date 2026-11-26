@@ -18,3 +18,6 @@ Main page has collapsible saved rolls beneath existing controls, pinned favorite
 
 ## Phase 2C
 Local history retains the latest 500 roll/reroll/repeat snapshots, newest first, with search, source/preset/type/mode filters, copy formats, fresh repeat from snapshot, individual delete and confirmed clear. Repeat preserves original formulas and auto-critical links even if a preset was edited or deleted. No cloud sync or backup yet. Phase 2D held.
+
+## Phase 2D
+Versioned JSON backup/restore of presets, history and appearance/feedback. Merge keeps current duplicate IDs/preferences; replace restores backup data/preferences, with confirmation and best-effort rollback on write failure. Synthesized offline sound and browser-dependent vibration default off, volume adjustable. Existing service worker precache is exercised in Chromium CI with network disabled after first online load. Actual iOS audio/haptics and mobile acceptance remain device-dependent.
