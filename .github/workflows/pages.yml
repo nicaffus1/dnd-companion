@@ -29,9 +29,9 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - run: node scripts/offline-check.mjs
         timeout-minutes: 3
-      - if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/phase5-usability' || github.ref == 'refs/heads/phase6-release'
+      - if: github.ref == 'refs/heads/main'
         uses: actions/configure-pages@v5
-      - if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/phase5-usability' || github.ref == 'refs/heads/phase6-release'
+      - if: github.ref == 'refs/heads/main'
         uses: actions/upload-pages-artifact@v3
         with:
           path: dist
@@ -41,6 +41,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      actions: write
     steps:
       - uses: actions/checkout@v4
         with:
@@ -51,9 +52,12 @@ jobs:
           test "$(git rev-parse "origin/$GITHUB_REF_NAME")" = "$GITHUB_SHA"
           git merge-base --is-ancestor origin/main "$GITHUB_SHA"
           git push origin "$GITHUB_SHA:refs/heads/main"
+          gh workflow run pages.yml --ref main
+        env:
+          GH_TOKEN: ${{ github.token }}
   deploy:
-    if: always() && needs.build.result == 'success' && ((github.ref == 'refs/heads/main' && needs.promote.result == 'skipped') || needs.promote.result == 'success')
-    needs: [build, promote]
+    if: github.ref == 'refs/heads/main'
+    needs: build
     runs-on: ubuntu-latest
     environment:
       name: github-pages
