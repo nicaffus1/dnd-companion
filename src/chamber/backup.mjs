@@ -1,12 +1,12 @@
 import {validatePreset,STORAGE_KEY} from './presets.mjs';
 import {validateEntry,HISTORY_KEY,HISTORY_LIMIT} from './history.mjs';
-import {normalizeColor} from './colors.mjs';
+import {validateAppearance,validateProfiles} from './visuals.mjs';
 export const APPEARANCE_KEY='dice-chamber-appearance-v4';
 export const FEEDBACK_KEY='dice-chamber-feedback-v1';
 export const DEFAULT_FEEDBACK=Object.freeze({sound:false,vibration:false,volume:0.5});
 export function validateFeedback(v){if(!v||typeof v.sound!=='boolean'||typeof v.vibration!=='boolean'||typeof v.volume!=='number'||!Number.isFinite(v.volume)||v.volume<0||v.volume>1)throw Error('Invalid sound or vibration preferences');return {sound:v.sound,vibration:v.vibration,volume:v.volume};}
 export function loadFeedback(storage){try{return validateFeedback(JSON.parse(storage.getItem(FEEDBACK_KEY)));}catch{return {...DEFAULT_FEEDBACK};}}
-function appearanceSettings(v){const a=v?.appearance;const body=normalizeColor(a?.body),ink=normalizeColor(a?.ink);if(!a||!body||!ink||!['Metal','Resin','Gemstone','Bone','Wood','Glass'].includes(a.material)||a.animation!=='Physical tabletop'||typeof a.animate!=='boolean'||!['Charcoal','Emerald','Dungeon','Tavern','Arcane','Minimal'].includes(v.theme))throw Error('Invalid appearance settings');return {theme:v.theme,appearance:{body,ink,material:a.material,animation:a.animation,animate:a.animate}};}
+export function appearanceSettings(v){if(!v||!['Charcoal','Emerald','Dungeon','Tavern','Arcane','Minimal'].includes(v.theme))throw Error('Invalid theme');return {theme:v.theme,appearance:validateAppearance(v.appearance),profiles:validateProfiles(v.profiles)};}
 function unique(items,label){if(new Set(items.map(x=>x.id)).size!==items.length)throw Error('Duplicate '+label+' IDs in backup');return items;}
 export function validateBackup(v){if(!v||v.format!=='dice-chamber'||v.version!==1||!Array.isArray(v.presets)||!Array.isArray(v.history)||v.history.length>HISTORY_LIMIT||v.presets.length>2000)throw Error('Unsupported or invalid Dice Chamber backup');return {format:'dice-chamber',version:1,createdAt:typeof v.createdAt==='string'?v.createdAt:'',presets:unique(v.presets.map(validatePreset),'preset'),history:unique(v.history.map(validateEntry),'history'),settings:appearanceSettings(v.settings),feedback:validateFeedback(v.feedback)};}
 export function makeBackup(data){return validateBackup({format:'dice-chamber',version:1,createdAt:new Date().toISOString(),...data});}
