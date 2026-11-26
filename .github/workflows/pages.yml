@@ -26,9 +26,11 @@ jobs:
       - run: npm test
       - run: npm run build
       - run: npm install --no-save playwright
-      - run: npx playwright install --with-deps chromium
+      - run: npx playwright install --with-deps chromium firefox webkit
       - run: node scripts/offline-check.mjs
         timeout-minutes: 3
+      - run: node scripts/browser-check.mjs
+        timeout-minutes: 5
       - if: github.ref == 'refs/heads/main'
         uses: actions/configure-pages@v5
       - if: github.ref == 'refs/heads/main'

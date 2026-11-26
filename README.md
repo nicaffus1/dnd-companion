@@ -1,5 +1,19 @@
-# D&D Companion
-Version 0.4.0 — dice chamber. Mobile-first personal D&D companion. Five tabs, forest green and gold, offline PWA shell. Create and switch campaigns with 2014 or 2024 rules; create basic character records; rename records. Settings includes JSON backup and reviewed replacement restore. A temporary rules preview on the Character tab uses your campaign edition. Dice roller supports secure formulas, presets, history and copyable results. Other gameplay modules are planned; preview does not change saved character records. Run npm install, npm test, npm run dev. GitHub Pages workflow generates PNG icons, tests and builds. Set Settings > Pages > Source to GitHub Actions. On iPhone use Safari > Share > Add to Home Screen after successful deployment. Data is local to the browser/app origin and may be erased; regularly download backups. No personal data is transmitted.
+# Dice Chamber 2.0.0
+An offline-capable, mobile-first polyhedral dice roller for tabletop roleplaying.
+ 
+[Open Dice Chamber](https://nicaffus1.github.io/dnd-companion/)
 
-## Version 1.0.0
-See [release notes](docs/RELEASE_1.md) for implemented mechanics, limitations and backup recommendations.
+## Getting started
+- Choose dice and a modifier, then Roll dice. Advantage and disadvantage require one positive d20; critical doubles positive dice, not the modifier.
+- Saved rolls supports independent attack and typed damage rows, favorites, folders, duplication, reordering and optional linked critical damage. Results are independent, not summed across damage types.
+- Tap an individual die result to reroll it using secure randomness. Use Roll history to review, copy or repeat previous rolls.
+- Settings includes appearance profiles, sound, vibration, animation, JSON backup and reviewed merge/replace restore.
+- Open the app online once before going offline. Install using your browser menu, or Safari Share → Add to Home Screen on iOS.
+
+## Data and limitations
+Data remains in browser storage; download regular JSON backups. Clearing site data or using another browser/device can lose access to local records. Merge keeps current settings and existing duplicate IDs; replace restores the backup. Backup format remains version 1 for compatibility. History is limited to 500 entries. Rolls support up to 50 dice (25 base dice for critical); the visual tray displays at most 30 physical dice, while numeric results include all dice. Physical animation is a presentation of securely selected results, not the source of randomness. Glass and engraving are visual simulations. Vibration and install prompts depend on browser support; iOS generally does not support web vibration. Device-specific graphics performance and physical-device compatibility are not guaranteed.
+
+## Development
+Node 22: npm install, npm test, npm run dev, npm run build. CI runs regression tests and Chromium offline checks plus a reduced-motion browser smoke test in Chromium, Firefox and WebKit. These are automated browser engines, not physical device certification. Designated development branches promote only after successful tests and a fast-forward/current-tip check, then dispatch production verification on main. GitHub Pages must use GitHub Actions as its source.
+
+Legacy 1.0.0 remains on the legacy-1.0 and release-1.0 branches; see [legacy release notes](docs/RELEASE_1.md).
