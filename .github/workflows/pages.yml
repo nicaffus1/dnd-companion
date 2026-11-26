@@ -1,15 +1,15 @@
 name: Test and deploy Pages
 on:
   push:
-    branches: [main, release-1.0, dice-overhaul, dice-preview, dice-overhead, dice-resin, dice-colors, dice-clarity, phase2-presets, phase2-advanced, phase2-home, phase2-history, phase2-backup, phase3-physics, phase4-visuals]
+    branches: [main, release-1.0, dice-overhaul, dice-preview, dice-overhead, dice-resin, dice-colors, dice-clarity, phase2-presets, phase2-advanced, phase2-home, phase2-history, phase2-backup, phase3-physics, phase4-visuals, phase5-usability, phase6-release]
   workflow_dispatch:
 permissions:
   contents: read
   pages: write
   id-token: write
 concurrency:
-  group: pages-${{ github.ref }}
-  cancel-in-progress: true
+  group: pages-${{ (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/phase5-usability' || github.ref == 'refs/heads/phase6-release') && 'production' || github.ref }}
+  cancel-in-progress: false
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -29,15 +29,31 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - run: node scripts/offline-check.mjs
         timeout-minutes: 3
-      - if: github.ref == 'refs/heads/main'
+      - if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/phase5-usability' || github.ref == 'refs/heads/phase6-release'
         uses: actions/configure-pages@v5
-      - if: github.ref == 'refs/heads/main'
+      - if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/phase5-usability' || github.ref == 'refs/heads/phase6-release'
         uses: actions/upload-pages-artifact@v3
         with:
           path: dist
-  deploy:
-    if: github.ref == 'refs/heads/main'
+  promote:
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/phase5-usability' || github.ref == 'refs/heads/phase6-release')
     needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Promote only the tested current branch tip
+        run: |
+          git fetch origin main "$GITHUB_REF_NAME"
+          test "$(git rev-parse "origin/$GITHUB_REF_NAME")" = "$GITHUB_SHA"
+          git merge-base --is-ancestor origin/main "$GITHUB_SHA"
+          git push origin "$GITHUB_SHA:refs/heads/main"
+  deploy:
+    if: always() && needs.build.result == 'success' && ((github.ref == 'refs/heads/main' && needs.promote.result == 'skipped') || needs.promote.result == 'success')
+    needs: [build, promote]
     runs-on: ubuntu-latest
     environment:
       name: github-pages
